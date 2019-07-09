@@ -173,6 +173,58 @@ def generate_model_4():
     return model
 
 
+def generate_MALSTM():
+    ip = Input(shape=(MAX_NB_VARIABLES, MAX_TIMESTEPS))
+
+    x = Masking()(ip)
+    x = AttentionLSTM(8)(x)
+    x = Dropout(0.8)(x)
+
+    # x = Dense(1000, activation='relu')(x)
+    # x = Dense(1000, activation='relu')(x)
+    # x = Dense(500, activation='relu')(x)
+
+    out = Dense(NB_CLASS, activation='softmax')(x)
+
+    model = Model(ip, out, name='MALSTM')
+    model.summary()
+
+    # add load model code here to fine-tune
+
+    return model
+
+
+def generate_FCN():
+    ip = Input(shape=(MAX_NB_VARIABLES, MAX_TIMESTEPS))
+
+    y = Permute((2, 1))(ip)
+    y = Conv1D(128, 8, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+    y = squeeze_excite_block(y)
+
+    y = Conv1D(256, 5, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+    y = squeeze_excite_block(y)
+
+    y = Conv1D(128, 3, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = GlobalAveragePooling1D()(y)
+
+    # y = Dense(1000, activation='relu')(y)
+    # y = Dense(100, activation='relu')(y)
+
+    out = Dense(NB_CLASS, activation='softmax')(y)
+
+    model = Model(ip, out, name='FCN')
+    model.summary()
+
+    return model
+
+
 def squeeze_excite_block(input):
     '''
     Create a squeeze-excite block
@@ -285,59 +337,24 @@ def ensemble_models(models, model_input):
     return modelEns
 
 
-def exec_ensemble(models):
-    # train models
-    for m in models:
-        train_model(m, DATASET_INDEX, dataset_prefix='lp1_', epochs=1000, batch_size=128)
+def running_renan():
+    model = generate_MALSTM()
 
-    # Predict labels with models
+    train_model(model, DATASET_INDEX, dataset_prefix='lp1_', epochs=1000, batch_size=128)
+
     _, _, X_test, y_test, is_timeseries = load_dataset_at(DATASET_INDEX)
-    labels = []
-    for m in models:
-        predicts = np.argmax(m.predict(X_test), axis=1)
-        labels.append(predicts)
 
-    # Ensemble with voting
-    labels = np.array(labels)
-    labels = np.transpose(labels, (1, 0))
-    labels_result = scipy.stats.mode(labels, axis=1)[0]
-    labels_result = np.squeeze(labels_result)
+    predictions = model.predict(X_test)
+    print(predictions)
 
-    # cal accuracy
-    match_count = 0
-    for i in range(len(labels_result)):
-        p = labels_result[i]
-        e = y_test[i][0]
-        if p == e:
-            match_count += 1
-
-    accuracy = (match_count * 100) / len(labels_result)
-    print('Accuracy: ', accuracy)
-
-    return accuracy
 
 if __name__ == "__main__":
     # model = generate_model_5()
     # train_model(model, DATASET_INDEX, dataset_prefix='lp1_', epochs=1000, batch_size=128)
     # evaluate_model(model, DATASET_INDEX, dataset_prefix='lp1_', batch_size=128)
 
-    model1 = generate_model()
-    model2 = generate_model_2()
-    # model3 = generate_model_3()
-    model4 = generate_model_4()
+    running_renan()
 
-    models = [
-        model1,
-        model2,
-        # model3,
-        model4
-    ]
-    accs = []
-    for i in range(4):
-        acc = exec_ensemble(models)
-        accs.append(acc)
-
-    print(accs)
 
 
 

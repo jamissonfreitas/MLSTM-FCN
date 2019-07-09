@@ -43,7 +43,7 @@ def generate_model():
 
     out = Dense(NB_CLASS, activation='softmax')(x)
 
-    model = Model(ip, out)
+    model = Model(ip, out, name='MLSTM_FCN')
     model.summary()
 
     # add load model code here to fine-tune
@@ -87,7 +87,7 @@ def generate_model_2():
 
     out = Dense(NB_CLASS, activation='softmax')(x)
 
-    model = Model(ip, out)
+    model = Model(ip, out, name='MALSTM_FCN')
     model.summary()
 
     # add load model code here to fine-tune
@@ -122,7 +122,7 @@ def generate_model_3():
 
     out = Dense(NB_CLASS, activation='softmax')(x)
 
-    model = Model(ip, out)
+    model = Model(ip, out, name='LSTM_FCN')
     model.summary()
 
     # add load model code here to fine-tune
@@ -164,12 +164,65 @@ def generate_model_4():
 
     out = Dense(NB_CLASS, activation='softmax')(x)
 
-    model = Model(ip, out)
+    model = Model(ip, out, name='ALSTM_FCN')
     model.summary()
 
     # add load model code here to fine-tune
 
     return model
+
+
+def generate_MALSTM():
+    ip = Input(shape=(MAX_NB_VARIABLES, MAX_TIMESTEPS))
+
+    x = Masking()(ip)
+    x = AttentionLSTM(8)(x)
+    x = Dropout(0.8)(x)
+
+    # x = Dense(1000, activation='relu')(x)
+    # x = Dense(1000, activation='relu')(x)
+    # x = Dense(500, activation='relu')(x)
+
+    out = Dense(NB_CLASS, activation='softmax')(x)
+
+    model = Model(ip, out, name='MALSTM')
+    model.summary()
+
+    # add load model code here to fine-tune
+
+    return model
+
+
+def generate_FCN():
+    ip = Input(shape=(MAX_NB_VARIABLES, MAX_TIMESTEPS))
+
+    y = Permute((2, 1))(ip)
+    y = Conv1D(128, 8, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+    y = squeeze_excite_block(y)
+
+    y = Conv1D(256, 5, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+    y = squeeze_excite_block(y)
+
+    y = Conv1D(128, 3, padding='same', kernel_initializer='he_uniform')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
+
+    y = GlobalAveragePooling1D()(y)
+
+    # y = Dense(1000, activation='relu')(y)
+    # y = Dense(100, activation='relu')(y)
+
+    out = Dense(NB_CLASS, activation='softmax')(y)
+
+    model = Model(ip, out, name='FCN')
+    model.summary()
+
+    return model
+
 
 def squeeze_excite_block(input):
     ''' Create a squeeze-excite block
