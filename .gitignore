@@ -11,3 +11,4 @@ weights/*.h5
 weights/*/*.h5
 .idea/
 utils/*.pyc
+__pycache__/
