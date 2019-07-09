@@ -138,10 +138,11 @@ def train_model(model:Model, dataset_id, dataset_prefix, dataset_fold_id=None, e
     else:
         factor = 1. / np.sqrt(2)
 
+    m_name = model.name if model.name else ''
     if dataset_fold_id is None:
-        weight_fn = "./weights/%s_weights.h5" % dataset_prefix
+        weight_fn = "./weights/%s_%s_weights.h5" % (dataset_prefix, m_name)
     else:
-        weight_fn = "./weights/%s_fold_%d_weights.h5" % (dataset_prefix, dataset_fold_id)
+        weight_fn = "./weights/%s_%s_fold_%d_weights.h5" % (dataset_prefix, m_name, dataset_fold_id)
 
     model_checkpoint = ModelCheckpoint(weight_fn, verbose=1, mode=optimization_mode,
                                        monitor=monitor, save_best_only=True, save_weights_only=True)
@@ -188,10 +189,11 @@ def evaluate_model(model:Model, dataset_id, dataset_prefix, dataset_fold_id=None
     optm = Adam(lr=1e-3)
     model.compile(optimizer=optm, loss='categorical_crossentropy', metrics=['accuracy'])
 
+    m_name = model.name if model.name else ''
     if dataset_fold_id is None:
-        weight_fn = "./weights/%s_weights.h5" % dataset_prefix
+        weight_fn = "./weights/%s_%s_weights.h5" % (dataset_prefix, m_name)
     else:
-        weight_fn = "./weights/%s_fold_%d_weights.h5" % (dataset_prefix, dataset_fold_id)
+        weight_fn = "./weights/%s_%s_fold_%d_weights.h5" % (dataset_prefix, m_name, dataset_fold_id)
     model.load_weights(weight_fn)
 
     if test_data_subset is not None:
